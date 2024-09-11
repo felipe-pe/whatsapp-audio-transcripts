@@ -137,6 +137,11 @@ def clean_up():
         print(f"Removendo a pasta {extract_dir}...")
         shutil.rmtree(extract_dir)
 
+# Função para instalar dependências adicionais
+def install_additional_dependencies():
+    print("Instalando dependências Flask, pysrt e logging...")
+    run_command("pip install flask pysrt")
+
 def main():
     # Verificar e atualizar o pip
     ensure_pip_up_to_date()
@@ -152,9 +157,8 @@ def main():
     print("Instalando PyTorch com suporte a CUDA 11.8...")
     run_command("pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118")
 
-    # Instalar Flask e pysrt via pip
-    print("Instalando dependências Flask e pysrt...")
-    run_command("pip install flask pysrt")
+    # Instalar dependências Flask e pysrt via pip
+    install_additional_dependencies()
 
     # Conferir se os arquivos e pastas já estão presentes antes de baixar e descompactar
     if not os.path.exists('faster-whisper-xxl.exe') or not os.path.exists('_xxl_data'):
