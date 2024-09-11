@@ -1,0 +1,9 @@
+Flask==2.1.1
+pysrt==1.1.2
+Jinja2==3.0.1
+markdown==3.3.4
+beautifulsoup4==4.9.3
+lxml==4.6.3
+transformers==4.12.5
+torch==1.9.1
+requests==2.26.0
