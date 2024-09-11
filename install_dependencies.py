@@ -4,11 +4,38 @@ import sys
 import urllib.request
 import shutil
 
+# URL para baixar o instalador do 7-Zip caso ele não esteja disponível
+SEVEN_ZIP_URL = "https://www.7-zip.org/a/7z2301-x64.exe"  # Atualize conforme a versão mais recente
+
 # Função para rodar comandos de instalação
 def run_command(command):
     result = subprocess.run(command, shell=True)
     if result.returncode != 0:
         sys.exit(f"Erro ao executar {command}")
+
+# Função para verificar e instalar o 7-Zip
+def ensure_7zip_installed():
+    seven_zip_path = os.path.join("C:\\Program Files\\7-Zip", "7z.exe")
+    
+    if not os.path.exists(seven_zip_path):
+        print("7-Zip não encontrado. Baixando e instalando 7-Zip...")
+        installer_path = os.path.join(os.getcwd(), '7z_installer.exe')
+        
+        try:
+            urllib.request.urlretrieve(SEVEN_ZIP_URL, installer_path)
+            print(f"Baixando 7-Zip de {SEVEN_ZIP_URL}...")
+            
+            # Executando o instalador do 7-Zip
+            run_command(f'{installer_path} /S')  # /S faz uma instalação silenciosa
+            
+            print("7-Zip instalado com sucesso.")
+        except Exception as e:
+            sys.exit(f"Erro ao baixar ou instalar o 7-Zip: {e}")
+        finally:
+            if os.path.exists(installer_path):
+                os.remove(installer_path)  # Remover o instalador após a instalação
+    else:
+        print("7-Zip já está instalado.")
 
 # Função para garantir que o pip está atualizado
 def ensure_pip_up_to_date():
@@ -46,13 +73,16 @@ def download_faster_whisper():
 
 # Função para descompactar o arquivo .7z usando 7z.exe
 def extract_faster_whisper_with_7z():
-    seven_z_path = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows.7z')
+    ensure_7zip_installed()
+    
+    seven_z_path = os.path.join("C:\\Program Files\\7-Zip", "7z.exe")
+    seven_z_file = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows.7z')
     extract_dir = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows')
 
     if not os.path.exists(extract_dir):
-        print(f"Descompactando '{seven_z_path}' usando 7z.exe...")
+        print(f"Descompactando '{seven_z_file}' usando 7z.exe...")
         try:
-            run_command(f'7z x "{seven_z_path}" -o"{extract_dir}"')
+            run_command(f'"{seven_z_path}" x "{seven_z_file}" -o"{extract_dir}"')
             print(f"Arquivo descompactado com sucesso em {extract_dir}")
         except Exception as e:
             sys.exit(f"Erro ao descompactar com 7z: {e}")
