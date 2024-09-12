@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template_string
 import os
 import subprocess
 import logging
@@ -22,6 +22,9 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 transcription_queue = Queue()
 queue_lock = Lock()
 
+# Lock para garantir que apenas uma transcrição ocorra por vez
+transcription_lock = Lock()
+
 # Função para processar a fila de transcrições
 def process_queue():
     while True:
@@ -29,7 +32,8 @@ def process_queue():
         if audio_path is None:
             break
         try:
-            transcribe_audio(audio_path, request_folder)
+            with transcription_lock:  # Garante que apenas uma transcrição ocorra por vez
+                transcribe_audio(audio_path, request_folder)
         finally:
             transcription_queue.task_done()
 
@@ -153,15 +157,28 @@ def upload_file():
             os.remove(file_path)
 
 # Rota para servir transcrições
-@app.route('/transcriptions/<path:subpath>', methods=['GET'])
+@app.route('/transcriptions/', defaults={'subpath': ''})
+@app.route('/transcriptions/<path:subpath>')
 def serve_transcriptions(subpath):
-    directory = os.path.join(OUTPUT_FOLDER)
-    file_path = os.path.join(directory, subpath)
-    
-    if os.path.exists(file_path):
-        return send_from_directory(directory, subpath)
+    directory = os.path.join(OUTPUT_FOLDER, subpath)
+
+    if os.path.isdir(directory):
+        # Se for um diretório, listar o conteúdo
+        files = os.listdir(directory)
+        html_content = f"<h2>Browsing: /transcriptions/{subpath}</h2><ul>"
+        for file_name in files:
+            file_path = os.path.join(subpath, file_name)
+            if os.path.isdir(os.path.join(directory, file_name)):
+                html_content += f'<li><a href="/transcriptions/{file_path}/">{file_name}/</a></li>'
+            else:
+                html_content += f'<li><a href="/transcriptions/{file_path}">{file_name}</a></li>'
+        html_content += "</ul>"
+        return render_template_string(html_content)
+    elif os.path.isfile(directory):
+        # Se for um arquivo, retornar o arquivo
+        return send_from_directory(OUTPUT_FOLDER, subpath)
     else:
-        return jsonify({"error": "File not found"}), 404
+        return jsonify({"error": "Path not found"}), 404
 
 # Rota para listar transcrições
 @app.route('/list_transcriptions/<user_id>/<request_id>', methods=['GET'])
