@@ -3,18 +3,17 @@ import subprocess
 import sys
 import urllib.request
 import shutil
-import platform
 
-# URL para baixar o instalador do 7-Zip
+# URL para baixar o instalador do 7-Zip caso ele não esteja disponível
 SEVEN_ZIP_URL = "https://www.7-zip.org/a/7z2301-x64.exe"  # Atualize conforme a versão mais recente
 
-# Função para rodar comandos no shell
+# Função para rodar comandos de instalação
 def run_command(command):
     result = subprocess.run(command, shell=True)
     if result.returncode != 0:
         sys.exit(f"Erro ao executar {command}")
 
-# Função para verificar e instalar o 7-Zip no Windows
+# Função para verificar e instalar o 7-Zip
 def ensure_7zip_installed():
     seven_zip_path = os.path.join("C:\\Program Files\\7-Zip", "7z.exe")
     
@@ -43,7 +42,7 @@ def ensure_pip_up_to_date():
     print("Verificando e atualizando o pip, se necessário...")
     run_command("python -m pip install --upgrade pip")
 
-# Função para verificar se o CUDA Toolkit e cuDNN já estão instalados
+# Função para verificar se o CUDA Toolkit e o cuDNN já estão instalados
 def check_cuda_and_cudnn():
     try:
         import torch
@@ -57,7 +56,7 @@ def check_cuda_and_cudnn():
         print("PyTorch não está instalado.")
         return False
 
-# Função para baixar o Whisper para Windows
+# Função para baixar o arquivo .7z
 def download_faster_whisper():
     exe_url = "https://github.com/Purfview/whisper-standalone-win/releases/download/Faster-Whisper-XXL/Faster-Whisper-XXL_r192.3.4_windows.7z"
     exe_path = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows.7z')
@@ -72,7 +71,7 @@ def download_faster_whisper():
     else:
         print("'Faster-Whisper-XXL_r192.3.4_windows.7z' já está presente no diretório.")
 
-# Função para descompactar o arquivo .7z usando 7z.exe no Windows
+# Função para descompactar o arquivo .7z usando 7z.exe
 def extract_faster_whisper_with_7z():
     ensure_7zip_installed()
     
@@ -90,7 +89,7 @@ def extract_faster_whisper_with_7z():
     else:
         print(f"Arquivos já descompactados em {extract_dir}.")
 
-# Função para mover os arquivos do Whisper para o local correto
+# Função para mover o conteúdo da pasta _xxl_data e os arquivos necessários
 def move_faster_whisper_files():
     base_dir = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows', 'Faster-Whisper-XXL')
     exe_source = os.path.join(base_dir, 'faster-whisper-xxl.exe')
@@ -107,7 +106,7 @@ def move_faster_whisper_files():
     else:
         print(f"'{exe_dest}' já está no local correto.")
 
-    # Verifica se a pasta _xxl_data existe e a move
+    # Verifica se a pasta _xxl_data existe e, se não existir, a move
     if os.path.exists(xxl_data_source):
         if not os.path.exists(xxl_data_dest):
             print(f"Movendo {xxl_data_source} para {xxl_data_dest}...")
@@ -123,7 +122,7 @@ def move_faster_whisper_files():
         gitignore.write('\n/_xxl_data\n')
     print(f"Pasta '_xxl_data' adicionada ao .gitignore.")
 
-# Função para limpar arquivos temporários
+# Função para limpar os arquivos temporários e pastas descompactadas
 def clean_up():
     seven_z_path = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows.7z')
     extract_dir = os.path.join(os.getcwd(), 'Faster-Whisper-XXL_r192.3.4_windows')
@@ -138,80 +137,37 @@ def clean_up():
         print(f"Removendo a pasta {extract_dir}...")
         shutil.rmtree(extract_dir)
 
-# Função para instalar dependências adicionais (Flask, pysrt, etc.)
+# Função para instalar dependências adicionais
 def install_additional_dependencies():
     print("Instalando dependências Flask, pysrt e logging...")
-    run_command("pip install flask pysrt logging")
+    run_command("pip install flask pysrt")
 
-# Função para detectar sistema operacional e arquitetura
-def detect_system():
-    system = platform.system()
-    architecture = platform.machine()
+def main():
+    # Verificar e atualizar o pip
+    ensure_pip_up_to_date()
 
-    if system == "Windows":
-        os_type = "windows"
-    elif system == "Linux":
-        os_type = "linux"
-    elif system == "Darwin":
-        os_type = "macos"
-    else:
-        sys.exit(f"Sistema operacional {system} não suportado.")
-
-    if architecture.startswith("x86_64"):
-        arch_type = "x64"
-    elif architecture.startswith("arm"):
-        arch_type = "arm"
-    else:
-        sys.exit(f"Arquitetura {architecture} não suportada.")
-
-    return os_type, arch_type
-
-# Função para instalar dependências para GPUs Nvidia no Windows
-def install_gpu_dependencies():
-    print("Instalando dependências para Windows com GPU Nvidia...")
-
-    # Verificar e instalar CUDA Toolkit e cuDNN
+    # Verificar se CUDA Toolkit e cuDNN já estão instalados
     if not check_cuda_and_cudnn():
         print("Instalando CUDA Toolkit e cuDNN...")
         run_command("conda install -c conda-forge cudatoolkit=11.8 cudnn=9.2.1.18 -y")
+    else:
+        print("CUDA Toolkit e cuDNN já estão instalados.")
 
     # Instalar PyTorch com suporte a CUDA 11.8
     print("Instalando PyTorch com suporte a CUDA 11.8...")
     run_command("pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118")
 
-    # Instalar dependências adicionais
+    # Instalar dependências Flask e pysrt via pip
     install_additional_dependencies()
 
-# Função para instalar dependências para CPUs
-def install_cpu_dependencies(os_type, arch_type):
-    print(f"Instalando dependências para {os_type} com arquitetura {arch_type}...")
-
-    # Instalar PyTorch para CPU
-    run_command(f"pip install torch==2.0.1+cpu torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu")
-
-    # Instalar dependências adicionais
-    install_additional_dependencies()
-
-# Função principal para configurar o ambiente
-def main():
-    os_type, arch_type = detect_system()
-
-    # Se for Windows com GPU Nvidia, seguir com instalação de GPU
-    if os_type == "windows" and check_cuda_and_cudnn():
-        install_gpu_dependencies()
+    # Conferir se os arquivos e pastas já estão presentes antes de baixar e descompactar
+    if not os.path.exists('faster-whisper-xxl.exe') or not os.path.exists('_xxl_data'):
+        download_faster_whisper()
+        extract_faster_whisper_with_7z()
+        move_faster_whisper_files()
+        clean_up()
     else:
-        # Se não houver GPU ou for outro sistema, seguir com instalação de CPU
-        install_cpu_dependencies(os_type, arch_type)
-
-    # Baixar e configurar o Whisper se necessário
-    if os_type == "windows":
-        if not os.path.exists('faster-whisper-xxl.exe') or not os.path.exists('_xxl_data'):
-            download_faster_whisper()
-            extract_faster_whisper_with_7z()
-            move_faster_whisper_files()
-            clean_up()
-        else:
-            print("O arquivo 'faster-whisper-xxl.exe' e a pasta '_xxl_data' já estão no local correto.")
+        print("O arquivo 'faster-whisper-xxl.exe' e a pasta '_xxl_data' já estão no local correto.")
 
     print("Instalação concluída! Ambiente configurado corretamente.")
 
