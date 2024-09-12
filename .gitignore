@@ -1,57 +1,21 @@
-# Ignorar o conteúdo das pastas, mas manter a estrutura das pastas
-.cache/*
-!.cache/.gitkeep
-
+# Ignorar conteúdo das pastas, mas manter a estrutura
 audios/*
-!audios/.gitkeep
-
 transcriptions/*
-!transcriptions/.gitkeep
-
 uploads/*
-!uploads/.gitkeep
-
 _models/*
+
+# Manter os arquivos .gitkeep nas pastas para manter a estrutura
+!audios/.gitkeep
+!transcriptions/.gitkeep
+!uploads/.gitkeep
 !_models/.gitkeep
 
-_xxl_data/*
-!_xxl_data/.gitkeep
-
-# Ignorar arquivos executáveis
-*.exe
-
-# Ignorar arquivos de áudio e transcrições temporários
-*.srt
-*.wav
-
-# Ignorar arquivos grandes de mídia ou compactados
-*.mp4
-*.mkv
-*.zip
-*.7z
-*.tar.gz
-
-# Ignorar scripts de instalação (opcional, se você não precisa no Git)
-install.sh
-install.ps1
-
-# Ignorar arquivos de sistema e editor
+# Ignorar arquivos temporários e desnecessários
 *.log
-.DS_Store
-Thumbs.db
-
-# Ignorar ambiente virtual
-venv/
-env/
-.virtualenv/
-*.env
-*.venv
-
-# Ignorar dependências baixadas localmente (exemplo para pip e conda)
-__pycache__/
+*.tmp
 *.pyc
-*.pyo
+__pycache__/
 
-# Ignorar arquivos gerados pelo sistema operacional
-.idea/
-.vscode/
+# Ignorar arquivos grandes, como modelos baixados
+*.pt
+*.onnx
