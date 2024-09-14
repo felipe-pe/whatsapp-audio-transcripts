@@ -11,6 +11,8 @@ from logging.handlers import RotatingFileHandler
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask import render_template_string
+from lock import acquire_lock, release_lock
+
 
 app = Flask(__name__)
 
@@ -222,6 +224,8 @@ def get_video_info(video_path, logger):
 def transcode_video(video_path, output_dir, video_info, audio_info, logger, codec="h264_nvenc", target_resolution=720, use_nvenc=True, audio_codec="aac", hw_accel="cuda"):
     """Transcodifica o vídeo utilizando NVENC ou outro codec conforme necessário"""
     try:
+        acquire_lock()  # Adquirir o lock antes de usar a GPU
+
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -263,11 +267,17 @@ def transcode_video(video_path, output_dir, video_info, audio_info, logger, code
     except subprocess.CalledProcessError as e:
         logger.error(f"Error during transcoding: {e.stderr}")
         raise
+    finally:
+        release_lock()  # Libera o lock após o uso da GPU
 
+
+from lock import acquire_lock, release_lock
 
 def split_video(video_path, segment_duration, output_dir, logger, codec="h264_nvenc", use_nvenc=True, audio_codec="aac", hw_accel="cuda"):
     """Divide o vídeo em segmentos menores utilizando NVENC ou outro codec conforme necessário"""
     try:
+        acquire_lock()  # Adquirir o lock antes de usar a GPU
+
         video_info = get_video_info(video_path, logger)[0]
         duration = float(video_info['duration'])
         frame_rate = eval(video_info["r_frame_rate"])
@@ -306,6 +316,9 @@ def split_video(video_path, segment_duration, output_dir, logger, codec="h264_nv
     except subprocess.CalledProcessError as e:
         logger.error(f"Error during splitting: {e.stderr}")
         raise
+    finally:
+        release_lock()  # Libera o lock após o uso da GPU
+
 
 def worker_task(url, id_request, id_user):
     """Função principal que gerencia o download e processamento de vídeo"""
