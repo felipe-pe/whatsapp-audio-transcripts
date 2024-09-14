@@ -4,8 +4,13 @@ import sys
 import urllib.request
 import shutil
 
-# URL para baixar o instalador do 7-Zip caso ele não esteja disponível
+# URLs para baixar os binários do ffprobe e yt-dlp
+FFPROBE_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z"
+YTDLP_URL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
 SEVEN_ZIP_URL = "https://www.7-zip.org/a/7z2301-x64.exe"  # Atualize conforme a versão mais recente
+
+# Diretório onde os binários do ffmpeg/ffprobe/ffplay para download de vídeos serão armazenados
+FFMPEG_VIDEO_DOWNLOAD_DIR = os.path.join(os.getcwd(), "ffmpeg_download_videos_package")
 
 # Função para rodar comandos de instalação
 def run_command(command):
@@ -41,6 +46,43 @@ def ensure_7zip_installed():
 def ensure_pip_up_to_date():
     print("Verificando e atualizando o pip, se necessário...")
     run_command("python -m pip install --upgrade pip")
+
+# Função para instalar o yt-dlp
+def install_yt_dlp():
+    yt_dlp_path = os.path.join(os.getcwd(), 'yt-dlp.exe')
+    
+    if not os.path.exists(yt_dlp_path):
+        print("yt-dlp não encontrado. Baixando yt-dlp...")
+        try:
+            urllib.request.urlretrieve(YTDLP_URL, yt_dlp_path)
+            print(f"yt-dlp baixado com sucesso.")
+        except Exception as e:
+            sys.exit(f"Erro ao baixar yt-dlp: {e}")
+    else:
+        print("yt-dlp já está presente no diretório.")
+
+# Função para baixar e descompactar o ffprobe e outros binários
+def install_ffprobe():
+    ffprobe_dir = FFMPEG_VIDEO_DOWNLOAD_DIR  # Novo diretório para armazenar os binários
+
+    if not os.path.exists(ffprobe_dir):
+        os.makedirs(ffprobe_dir)
+        print("Baixando ffmpeg, ffprobe e ffplay para download de vídeos...")
+        ffprobe_zip_path = os.path.join(ffprobe_dir, 'ffmpeg_download.7z')
+
+        try:
+            urllib.request.urlretrieve(FFPROBE_URL, ffprobe_zip_path)
+            print("Descompactando ffmpeg, ffprobe e ffplay...")
+            ensure_7zip_installed()
+            run_command(f'"C:\\Program Files\\7-Zip\\7z.exe" x {ffprobe_zip_path} -o{ffprobe_dir}')
+            print(f"ffmpeg, ffprobe e ffplay descompactados em {ffprobe_dir}.")
+        except Exception as e:
+            sys.exit(f"Erro ao baixar ou descompactar ffmpeg: {e}")
+        finally:
+            if os.path.exists(ffprobe_zip_path):
+                os.remove(ffprobe_zip_path)  # Limpar o arquivo .7z após descompactação
+    else:
+        print("ffmpeg, ffprobe e ffplay já estão no diretório.")
 
 # Função para verificar se o CUDA Toolkit e o cuDNN já estão instalados
 def check_cuda_and_cudnn():
@@ -145,6 +187,10 @@ def install_additional_dependencies():
 def main():
     # Verificar e atualizar o pip
     ensure_pip_up_to_date()
+
+    # Instalar yt-dlp e ffprobe
+    install_yt_dlp()
+    install_ffprobe()
 
     # Verificar se CUDA Toolkit e cuDNN já estão instalados
     if not check_cuda_and_cudnn():
