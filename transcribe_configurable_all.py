@@ -7,6 +7,8 @@ from queue import Queue
 from threading import Thread, Lock
 import time
 import shutil  # Import necessário para remover vídeos após a extração do áudio
+from lock import acquire_lock, release_lock
+
 
 app = Flask(__name__)
 
@@ -41,11 +43,13 @@ def process_queue():
 # Inicia a thread para processamento de transcrições em segundo plano
 thread = Thread(target=process_queue, daemon=True)
 thread.start()
-# Função para extrair áudio de vídeos
 # Função para extrair áudio de vídeos de maneira robusta
+
 def extract_audio_from_video(video_path, audio_output_path):
     """Extrai o áudio de um vídeo e salva no formato .wav, com suporte a múltiplos formatos."""
     try:
+        acquire_lock()  # Adquirir o lock antes de usar a GPU
+        
         # Verifica o formato e codecs do vídeo
         ffprobe_command = [
             'ffprobe', 
@@ -80,6 +84,9 @@ def extract_audio_from_video(video_path, audio_output_path):
     except subprocess.CalledProcessError as e:
         logging.error(f"Erro ao extrair áudio de {video_path}: {e}")
         raise
+    finally:
+        release_lock()  # Libera o lock após o uso da GPU
+
 
 
 # Função para remover o arquivo de vídeo após extração
@@ -137,6 +144,8 @@ def transcribe_audio(audio_path, request_folder, config):
     start_time = time.time()  # Marca o início da transcrição
     
     try:
+        acquire_lock()  # Adquirir o lock antes de utilizar a GPU
+
         # Configuração base do comando
         command = [
             FASTER_WHISPER_PATH,
@@ -171,6 +180,9 @@ def transcribe_audio(audio_path, request_folder, config):
     except subprocess.CalledProcessError as e:
         logging.error(f"Erro durante a transcrição: {e}")
         return False
+    finally:
+        release_lock()  # Libera o lock após finalizar o uso da GPU
+
 
 # Rota para upload do arquivo de áudio ou vídeo com diferentes configurações
 @app.route('/upload', methods=['POST'])
